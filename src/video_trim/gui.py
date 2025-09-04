@@ -14,26 +14,37 @@ class VideoTrimApp(tk.Tk):
         self.title("Video Trim")
         self.geometry("500x300")
 
-        tk.Label(self, text=f"Version {__version__}").pack(pady=10)
-
         self.file_path: str | None = None
 
         self.file_label = tk.Label(self, text="No file selected")
         self.file_label.pack(pady=5)
 
+        self.remaining_label = tk.Label(self, text="Time remaining: N/A")
+        self.remaining_label.pack(pady=5)
+
         tk.Button(self, text="Select Video", command=self.select_file).pack(pady=5)
 
-        tk.Label(self, text="Start Time (HH:MM:SS)").pack()
-        self.start_entry = tk.Entry(self)
-        self.start_entry.pack(pady=5)
+        time_frame = tk.Frame(self)
+        time_frame.pack(pady=5, fill="x", padx=10)
 
-        tk.Label(self, text="End Time (HH:MM:SS)").pack()
-        self.end_entry = tk.Entry(self)
-        self.end_entry.pack(pady=5)
+        start_frame = tk.Frame(time_frame)
+        start_frame.pack(side="left")
+        tk.Label(start_frame, text="Start Time (HH:MM:SS)").pack(anchor="w")
+        self.start_entry = tk.Entry(start_frame)
+        self.start_entry.pack()
+
+        end_frame = tk.Frame(time_frame)
+        end_frame.pack(side="right")
+        tk.Label(end_frame, text="End Time (HH:MM:SS)").pack(anchor="e")
+        self.end_entry = tk.Entry(end_frame)
+        self.end_entry.pack()
 
         tk.Button(self, text="Trim and Convert", command=self.trim_and_convert).pack(pady=10)
 
-        tk.Button(self, text="Exit", command=self.quit).pack(side="bottom", anchor="e", padx=10, pady=10)
+        bottom_frame = tk.Frame(self)
+        bottom_frame.pack(side="bottom", fill="x", pady=10)
+        tk.Label(bottom_frame, text=f"Version {__version__}").pack(side="left", padx=10)
+        tk.Button(bottom_frame, text="Exit", command=self.quit).pack(side="right", padx=10)
 
     def select_file(self) -> None:
         """Open a file dialog and display the selected file name."""
