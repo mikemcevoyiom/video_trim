@@ -1,23 +1,7 @@
-codex/add-pytest-and-initial-cli-test
 [build-system]
-requires = ["setuptools>=61"]
+requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
-[project]
-name = "video_trim"
-version = "0.1.0"
-description = "Trim video using ffmpeg"
-readme = "README.md"
-requires-python = ">=3.8"
-
-[project.scripts]
-video-trim = "video_trim.cli:main"
-
-[project.optional-dependencies]
-dev = [
-    "pytest",
-]
-=======
 [project]
 name = "video_trim"
 version = "0.1.0"
@@ -29,7 +13,8 @@ dependencies = [
     "click",
 ]
 
-[build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
-main
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[project.scripts]
+video-trim = "video_trim.cli:main"
