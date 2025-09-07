@@ -9,12 +9,13 @@ from __future__ import annotations
 
 import argparse
 import subprocess
+import sys
 from typing import Sequence
 
 from video_trim import __version__
 
 
-def trim_video(input_file: str, start: str, end: str, output_file: str) -> None:
+def trim_video(input_file: str, start: str, end: str, output_file: str) -> int:
     """Trim a video using FFmpeg.
 
     Parameters
@@ -45,7 +46,15 @@ def trim_video(input_file: str, start: str, end: str, output_file: str) -> None:
         output_file,
     ]
 
-    subprocess.run(command, check=True)
+    try:
+        subprocess.run(command, check=True)
+    except FileNotFoundError:
+        print("ffmpeg not found. Please install ffmpeg and ensure it is in your PATH.", file=sys.stderr)
+        return 1
+    except subprocess.CalledProcessError as exc:
+        print(f"ffmpeg failed: {exc}", file=sys.stderr)
+        return 1
+    return 0
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -59,12 +68,12 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(argv: Sequence[str] | None = None) -> None:
+def main(argv: Sequence[str] | None = None) -> int:
     """Entry point for the command line interface."""
     parser = build_parser()
     args = parser.parse_args(argv)
-    trim_video(args.input, args.start, args.end, args.output)
+    return trim_video(args.input, args.start, args.end, args.output)
 
 
 if __name__ == "__main__":  # pragma: no cover - CLI entry point
-    main()
+    raise SystemExit(main())
