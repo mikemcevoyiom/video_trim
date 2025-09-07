@@ -1,3 +1,7 @@
+"""GUI and utility functions for the video_trim project."""
+
+from __future__ import annotations
+
 import os
 import subprocess
 import tkinter as tk
@@ -13,6 +17,8 @@ VIDEO_EXTENSIONS = {
     ".mpg",
     ".mpeg",
 }
+
+FILETYPES = ("Video files", " ".join(f"*{ext}" for ext in sorted(VIDEO_EXTENSIONS)))
 
 
 def convert_directory_to_mkv(directory: str) -> list[str]:
@@ -45,6 +51,7 @@ def convert_directory_to_mkv(directory: str) -> list[str]:
             converted.append(out_path)
     return converted
 
+
 from video_trim import __version__
 
 
@@ -69,9 +76,7 @@ class VideoTrimApp(tk.Tk):
         self.remaining_label.pack(pady=5)
 
         tk.Button(self, text="Select Video", command=self.select_file).pack(pady=5)
-=======
         tk.Button(self, text="Select Folder", command=self.select_directory).pack(pady=5)
-main
 
         time_frame = tk.Frame(self)
         time_frame.pack(pady=5, fill="x", padx=10)
@@ -88,23 +93,25 @@ main
         self.end_entry = tk.Entry(end_frame)
         self.end_entry.pack()
 
-        tk.Button(self, text="Trim and Convert", command=self.trim_and_convert).pack(pady=10)
-        tk.Button(self, text="Select Folder", command=self.select_directory).pack(pady=5)
-=======
-main
-        tk.Button(self, text="Convert Directory to MKV", command=self.convert_directory).pack(pady=5)
+        tk.Button(self, text="Trim and Convert", command=self.trim_and_convert).pack(
+            pady=10
+        )
+        tk.Button(
+            self, text="Convert Directory to MKV", command=self.convert_directory
+        ).pack(pady=5)
 
         bottom_frame = tk.Frame(self)
         bottom_frame.pack(side="bottom", fill="x", pady=10)
-        tk.Label(bottom_frame, text=f"Version {__version__}").pack(side="left", padx=10)
-        tk.Button(bottom_frame, text="Exit", command=self.confirm_exit).pack(side="right", padx=10)
-=======
-        tk.Button(bottom_frame, text="Exit", command=self.quit).pack(side="right", padx=10)
-main
+        tk.Label(bottom_frame, text=f"Version {__version__}").pack(
+            side="left", padx=10
+        )
+        tk.Button(bottom_frame, text="Exit", command=self.confirm_exit).pack(
+            side="right", padx=10
+        )
 
     def select_file(self) -> None:
         """Open a file dialog and display the selected file name."""
-        file_path = filedialog.askopenfilename(filetypes=[("Video files", "*.*")])
+        file_path = filedialog.askopenfilename(filetypes=[FILETYPES])
         if file_path:
             self.file_path = file_path
             self.file_label.config(text=os.path.basename(file_path))
@@ -174,9 +181,8 @@ main
         if messagebox.askokcancel("Exit", "Close the application?"):
             self.quit()
 
-=======
-main
 
 if __name__ == "__main__":  # pragma: no cover - GUI entry point
     app = VideoTrimApp()
     app.mainloop()
+
