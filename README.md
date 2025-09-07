@@ -6,6 +6,19 @@ Using ffmpeg to trim video to supplied time frames and reencode to mkv file type
 
 - Python 3.8+
 
+codex/remove-ffmpeg-python-and-click-dependencies
+## Installation
+
+Install dependencies with [pip](https://pip.pypa.io/):
+
+```bash
+python -m pip install --upgrade pip
+pip install -e .
+```
+
+The command installs `video_trim` in editable mode.
+=======
+main
 ## Overview
 `video_trim` demonstrates how to trim and reencode video segments using FFmpeg. The examples output MKV files encoded with the HEVC (H.265) codec.
 
