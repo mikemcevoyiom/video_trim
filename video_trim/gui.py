@@ -45,7 +45,7 @@ def convert_directory_to_mkv(directory: str) -> list[str]:
             converted.append(out_path)
     return converted
 
-from . import __version__
+from video_trim import __version__
 
 
 class VideoTrimApp(tk.Tk):
@@ -69,7 +69,6 @@ class VideoTrimApp(tk.Tk):
         self.remaining_label.pack(pady=5)
 
         tk.Button(self, text="Select Video", command=self.select_file).pack(pady=5)
-        tk.Button(self, text="Select Folder", command=self.select_directory).pack(pady=5)
 
         time_frame = tk.Frame(self)
         time_frame.pack(pady=5, fill="x", padx=10)
@@ -87,12 +86,13 @@ class VideoTrimApp(tk.Tk):
         self.end_entry.pack()
 
         tk.Button(self, text="Trim and Convert", command=self.trim_and_convert).pack(pady=10)
+        tk.Button(self, text="Select Folder", command=self.select_directory).pack(pady=5)
         tk.Button(self, text="Convert Directory to MKV", command=self.convert_directory).pack(pady=5)
 
         bottom_frame = tk.Frame(self)
         bottom_frame.pack(side="bottom", fill="x", pady=10)
         tk.Label(bottom_frame, text=f"Version {__version__}").pack(side="left", padx=10)
-        tk.Button(bottom_frame, text="Exit", command=self.quit).pack(side="right", padx=10)
+        tk.Button(bottom_frame, text="Exit", command=self.confirm_exit).pack(side="right", padx=10)
 
     def select_file(self) -> None:
         """Open a file dialog and display the selected file name."""
@@ -160,6 +160,11 @@ class VideoTrimApp(tk.Tk):
             messagebox.showerror("Error", f"FFmpeg failed: {exc}")
             return
         messagebox.showinfo("Success", f"Converted {len(converted)} file(s)")
+
+    def confirm_exit(self) -> None:
+        """Prompt the user to confirm application exit."""
+        if messagebox.askokcancel("Exit", "Close the application?"):
+            self.quit()
 
 
 if __name__ == "__main__":  # pragma: no cover - GUI entry point
