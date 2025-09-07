@@ -8,6 +8,7 @@ import sys
 import tkinter as tk
 from tkinter import filedialog, messagebox
 
+
 VIDEO_EXTENSIONS = {
     ".mp4",
     ".mov",
@@ -92,9 +93,9 @@ class VideoTrimApp(tk.Tk):
         self.end_entry = tk.Entry(end_frame)
         self.end_entry.pack()
 
-        tk.Button(self, text="Trim and Convert", command=self.trim_and_convert).pack(
-            pady=10
-        )
+        tk.Button(
+            self, text="Trim and Convert", command=self.trim_and_convert
+        ).pack(pady=10)
         tk.Button(
             self, text="Convert Directory to MKV", command=self.convert_directory
         ).pack(pady=5)
@@ -107,28 +108,6 @@ class VideoTrimApp(tk.Tk):
         tk.Button(bottom_frame, text="Exit", command=self.confirm_exit).pack(
             side="right", padx=10
         )
-
-        tk.Button(self, text="Trim and Convert", command=self.trim_and_convert).pack(pady=10)
-
-        tk.Button(
-            self, text="Convert Directory to MKV", command=self.convert_directory
-        ).pack(pady=5)
-
-        main
-        tk.Button(self, text="Convert Directory to MKV", command=self.convert_directory).pack(pady=5)
-        main
-
-        bottom_frame = tk.Frame(self)
-        bottom_frame.pack(side="bottom", fill="x", pady=10)
-        tk.Label(bottom_frame, text=f"Version {__version__}").pack(side="left", padx=10)
-
-        tk.Button(bottom_frame, text="Exit", command=self.confirm_exit).pack(
-            side="right", padx=10
-        )
-
-        tk.Button(bottom_frame, text="Exit", command=self.confirm_exit).pack(side="right", padx=10)
-
-        main
 
     def select_file(self) -> None:
         """Open a file dialog and display the selected file name."""
@@ -214,7 +193,6 @@ class VideoTrimApp(tk.Tk):
             self.quit()
 
 
-        main
 if __name__ == "__main__":  # pragma: no cover - GUI entry point
     app = VideoTrimApp()
     app.mainloop()
