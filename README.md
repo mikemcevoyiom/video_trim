@@ -1,22 +1,11 @@
 # video_trim
 
-codex/add-pyproject.toml-for-dependencies
 Using ffmpeg to trim video to supplied time frames and reencode to mkv file type and HEVC codec.
 
 ## Requirements
 
 - Python 3.8+
 
-## Installation
-
-Install dependencies with [pip](https://pip.pypa.io/):
-
-```bash
-python -m pip install --upgrade pip
-pip install -e .
-```
-
-The command installs the packages listed in `pyproject.toml`, such as `ffmpeg-python` and `click`, and makes `video_trim` available in editable mode.
 ## Overview
 `video_trim` demonstrates how to trim and reencode video segments using FFmpeg. The examples output MKV files encoded with the HEVC (H.265) codec.
 
@@ -31,14 +20,16 @@ ffmpeg -version
 ```
 
 ## Installation
-Clone the repository:
+Clone the repository and install dependencies:
 
 ```bash
 git clone https://github.com/your-user-name/video_trim.git
 cd video_trim
+python -m pip install --upgrade pip
+pip install -e .
 ```
 
-No additional build steps are required.
+The command installs the packages listed in `pyproject.toml`, such as `ffmpeg-python` and `click`, and makes `video_trim` available in editable mode. No additional build steps are required.
 
 ## Usage examples
 
@@ -79,5 +70,3 @@ original location.
 
 ## Reporting issues and requesting features
 Use the GitHub [issue tracker](https://github.com/your-user-name/video_trim/issues) to report bugs or suggest enhancements. Please provide as much detail as possible, including command examples and logs.
-
-main
