@@ -92,6 +92,7 @@ class VideoTrimApp(tk.Tk):
             self, text="Convert Directory to MKV", command=self.convert_directory
         ).pack(pady=5)
 
+        main
         tk.Button(self, text="Convert Directory to MKV", command=self.convert_directory).pack(pady=5)
         main
 
@@ -104,6 +105,7 @@ class VideoTrimApp(tk.Tk):
         )
 
         tk.Button(bottom_frame, text="Exit", command=self.confirm_exit).pack(side="right", padx=10)
+
         main
 
     def select_file(self) -> None:
