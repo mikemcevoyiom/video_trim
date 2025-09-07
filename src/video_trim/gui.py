@@ -3,6 +3,48 @@ import subprocess
 import tkinter as tk
 from tkinter import filedialog, messagebox
 
+VIDEO_EXTENSIONS = {
+    ".mp4",
+    ".mov",
+    ".avi",
+    ".flv",
+    ".wmv",
+    ".m4v",
+    ".mpg",
+    ".mpeg",
+}
+
+
+def convert_directory_to_mkv(directory: str) -> list[str]:
+    """Convert all non-MKV video files in ``directory`` to MKV.
+
+    Parameters
+    ----------
+    directory:
+        Path to the root directory to traverse.
+
+    Returns
+    -------
+    list[str]
+        Paths to the converted files.
+    """
+
+    converted: list[str] = []
+    for root, _, files in os.walk(directory):
+        out_dir = os.path.join(root, "converted")
+        os.makedirs(out_dir, exist_ok=True)
+        for name in files:
+            ext = os.path.splitext(name)[1].lower()
+            if ext == ".mkv" or ext not in VIDEO_EXTENSIONS:
+                continue
+            in_path = os.path.join(root, name)
+            out_name = os.path.splitext(name)[0] + ".mkv"
+            out_path = os.path.join(out_dir, out_name)
+            command = ["ffmpeg", "-i", in_path, "-c", "copy", out_path]
+            subprocess.run(command, check=True)
+            converted.append(out_path)
+    return converted
+
 from . import __version__
 
 
@@ -15,14 +57,19 @@ class VideoTrimApp(tk.Tk):
         self.geometry("500x300")
 
         self.file_path: str | None = None
+        self.directory_path: str | None = None
 
         self.file_label = tk.Label(self, text="No file selected")
         self.file_label.pack(pady=5)
+
+        self.dir_label = tk.Label(self, text="No directory selected")
+        self.dir_label.pack(pady=5)
 
         self.remaining_label = tk.Label(self, text="Time remaining: N/A")
         self.remaining_label.pack(pady=5)
 
         tk.Button(self, text="Select Video", command=self.select_file).pack(pady=5)
+        tk.Button(self, text="Select Folder", command=self.select_directory).pack(pady=5)
 
         time_frame = tk.Frame(self)
         time_frame.pack(pady=5, fill="x", padx=10)
@@ -40,6 +87,7 @@ class VideoTrimApp(tk.Tk):
         self.end_entry.pack()
 
         tk.Button(self, text="Trim and Convert", command=self.trim_and_convert).pack(pady=10)
+        tk.Button(self, text="Convert Directory to MKV", command=self.convert_directory).pack(pady=5)
 
         bottom_frame = tk.Frame(self)
         bottom_frame.pack(side="bottom", fill="x", pady=10)
@@ -52,6 +100,13 @@ class VideoTrimApp(tk.Tk):
         if file_path:
             self.file_path = file_path
             self.file_label.config(text=os.path.basename(file_path))
+
+    def select_directory(self) -> None:
+        """Open a folder dialog and display the selected directory name."""
+        directory = filedialog.askdirectory()
+        if directory:
+            self.directory_path = directory
+            self.dir_label.config(text=os.path.basename(directory))
 
     def trim_and_convert(self) -> None:
         """Trim the selected video and convert it to MKV with HEVC codec."""
@@ -93,6 +148,18 @@ class VideoTrimApp(tk.Tk):
             return
 
         messagebox.showinfo("Success", f"Video saved to {output_file}")
+
+    def convert_directory(self) -> None:
+        """Convert selected directory of videos to MKV."""
+        if not self.directory_path:
+            messagebox.showerror("Error", "No directory selected")
+            return
+        try:
+            converted = convert_directory_to_mkv(self.directory_path)
+        except subprocess.CalledProcessError as exc:  # pragma: no cover - subprocess failure
+            messagebox.showerror("Error", f"FFmpeg failed: {exc}")
+            return
+        messagebox.showinfo("Success", f"Converted {len(converted)} file(s)")
 
 
 if __name__ == "__main__":  # pragma: no cover - GUI entry point
