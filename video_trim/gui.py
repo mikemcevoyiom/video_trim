@@ -45,7 +45,7 @@ def convert_directory_to_mkv(directory: str) -> list[str]:
             converted.append(out_path)
     return converted
 
-from . import __version__
+from video_trim import __version__
 
 
 class VideoTrimApp(tk.Tk):
