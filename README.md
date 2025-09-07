@@ -16,7 +16,7 @@ python -m pip install --upgrade pip
 pip install -e .
 ```
 
-The command installs the packages listed in `pyproject.toml`, such as `ffmpeg-python` and `click`, and makes `video_trim` available in editable mode.
+The command installs `video_trim` in editable mode.
 ## Overview
 `video_trim` demonstrates how to trim and reencode video segments using FFmpeg. The examples output MKV files encoded with the HEVC (H.265) codec.
 
