@@ -41,6 +41,14 @@ cd video_trim
 No additional build steps are required.
 
 ## Usage examples
+
+### Launch the GUI
+Start the graphical interface to trim or convert videos:
+
+```bash
+python -m video_trim.gui
+```
+
 ### Trim a clip and keep original audio
 ```bash
 ffmpeg -ss 00:00:05 -to 00:00:20 -i input.mp4 -c:v libx265 -c:a copy output.mkv
@@ -54,9 +62,9 @@ ffmpeg -ss 00:02:00 -to 00:03:30 -i input.mp4 -c:v libx265 -c:a aac -b:a 192k cl
 *Output:* `clip.mkv` encoded with HEVC video and AAC audio.
 
 ### Convert a directory of videos to MKV
-Launch the GUI (`python -m video_trim.gui`), choose **Select Folder**, then click
-**Convert Directory to MKV**. Each non-MKV video is copied to an MKV inside a
-`converted` subfolder within its original location.
+In the GUI, choose **Select Folder**, then click **Convert Directory to MKV**.
+Each non-MKV video is copied to an MKV inside a `converted` subfolder within its
+original location.
 
 ## Contribution guidelines
 1. Fork the repository and create a new branch.
