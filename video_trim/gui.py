@@ -87,16 +87,24 @@ class VideoTrimApp(tk.Tk):
         self.end_entry.pack()
 
         tk.Button(self, text="Trim and Convert", command=self.trim_and_convert).pack(pady=10)
+
         tk.Button(
             self, text="Convert Directory to MKV", command=self.convert_directory
         ).pack(pady=5)
 
+        tk.Button(self, text="Convert Directory to MKV", command=self.convert_directory).pack(pady=5)
+        main
+
         bottom_frame = tk.Frame(self)
         bottom_frame.pack(side="bottom", fill="x", pady=10)
         tk.Label(bottom_frame, text=f"Version {__version__}").pack(side="left", padx=10)
+
         tk.Button(bottom_frame, text="Exit", command=self.confirm_exit).pack(
             side="right", padx=10
         )
+
+        tk.Button(bottom_frame, text="Exit", command=self.confirm_exit).pack(side="right", padx=10)
+        main
 
     def select_file(self) -> None:
         """Open a file dialog and display the selected file name."""
@@ -176,9 +184,12 @@ class VideoTrimApp(tk.Tk):
     def confirm_exit(self) -> None:
         """Prompt the user to confirm application exit."""
         if messagebox.askokcancel("Exit", "Close the application?"):
+            # ``destroy`` closes the window and ``quit`` ensures the main loop
+            # terminates, allowing the application to exit cleanly.
+            self.destroy()
             self.quit()
 
-
+        main
 if __name__ == "__main__":  # pragma: no cover - GUI entry point
     app = VideoTrimApp()
     app.mainloop()
