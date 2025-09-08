@@ -100,22 +100,23 @@ class VideoTrimApp(tk.Tk):
         self.end_entry.pack()
 
         tk.Button(
-            self, text="Trim and Convert", command=self.trim_and_convert
-        ).pack(pady=10)
-        tk.Button(
             self,
             text="Convert Directory to MKV",
             command=self.convert_directory,
+        ).pack(pady=10)
+        tk.Button(
+            self, text="Trim and Convert", command=self.trim_and_convert
         ).pack(pady=5)
 
         bottom_frame = tk.Frame(self)
         bottom_frame.pack(side="bottom", fill="x", pady=10)
-        tk.Label(bottom_frame, text=f"Version {__version__}").pack(
-            side="left", padx=10
+        tk.Label(bottom_frame, text=f"Version {__version__}").grid(
+            row=0, column=0, sticky="w", padx=10
         )
         tk.Button(
             bottom_frame, text="Exit", command=self.confirm_exit
-        ).pack(side="right", padx=10)
+        ).grid(row=0, column=1, sticky="e", padx=10)
+        bottom_frame.columnconfigure(0, weight=1)
 
     def select_file(self) -> None:
         """Open a file dialog and display the selected file name."""
