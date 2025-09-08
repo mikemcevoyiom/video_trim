@@ -100,12 +100,12 @@ class VideoTrimApp(tk.Tk):
         self.end_entry.pack()
 
         tk.Button(
-            self, text="Trim and Convert", command=self.trim_and_convert
-        ).pack(pady=10)
-        tk.Button(
             self,
             text="Convert Directory to MKV",
             command=self.convert_directory,
+        ).pack(pady=10)
+        tk.Button(
+            self, text="Trim and Convert", command=self.trim_and_convert
         ).pack(pady=5)
 
         bottom_frame = tk.Frame(self)
