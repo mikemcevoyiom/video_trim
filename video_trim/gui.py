@@ -7,6 +7,7 @@ import subprocess
 import sys
 import tkinter as tk
 from tkinter import filedialog, messagebox
+from video_trim import __version__
 
 
 VIDEO_EXTENSIONS = {
@@ -50,9 +51,6 @@ def convert_directory_to_mkv(directory: str) -> list[str]:
                 raise
             converted.append(out_path)
     return converted
-
-
-from video_trim import __version__
 
 
 class VideoTrimApp(tk.Tk):
