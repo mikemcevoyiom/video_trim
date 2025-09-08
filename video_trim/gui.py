@@ -21,7 +21,10 @@ VIDEO_EXTENSIONS = {
     ".mpeg",
 }
 
-FILETYPES = ("Video files", " ".join(f"*{ext}" for ext in sorted(VIDEO_EXTENSIONS)))
+FILETYPES = (
+    "Video files",
+    " ".join(f"*{ext}" for ext in sorted(VIDEO_EXTENSIONS)),
+)
 
 
 def convert_directory_to_mkv(directory: str) -> list[str]:
@@ -42,7 +45,8 @@ def convert_directory_to_mkv(directory: str) -> list[str]:
                 subprocess.run(command, check=True)
             except FileNotFoundError:
                 print(
-                    "ffmpeg not found. Please install ffmpeg and ensure it is in your PATH.",
+                    "ffmpeg not found. Please install ffmpeg "
+                    "and ensure it is in your PATH.",
                     file=sys.stderr,
                 )
                 raise
@@ -73,8 +77,12 @@ class VideoTrimApp(tk.Tk):
         self.remaining_label = tk.Label(self, text="Time remaining: N/A")
         self.remaining_label.pack(pady=5)
 
-        tk.Button(self, text="Select Video", command=self.select_file).pack(pady=5)
-        tk.Button(self, text="Select Folder", command=self.select_directory).pack(pady=5)
+        tk.Button(
+            self, text="Select Video", command=self.select_file
+        ).pack(pady=5)
+        tk.Button(
+            self, text="Select Folder", command=self.select_directory
+        ).pack(pady=5)
 
         time_frame = tk.Frame(self)
         time_frame.pack(pady=5, fill="x", padx=10)
@@ -95,7 +103,9 @@ class VideoTrimApp(tk.Tk):
             self, text="Trim and Convert", command=self.trim_and_convert
         ).pack(pady=10)
         tk.Button(
-            self, text="Convert Directory to MKV", command=self.convert_directory
+            self,
+            text="Convert Directory to MKV",
+            command=self.convert_directory,
         ).pack(pady=5)
 
         bottom_frame = tk.Frame(self)
@@ -103,9 +113,9 @@ class VideoTrimApp(tk.Tk):
         tk.Label(bottom_frame, text=f"Version {__version__}").pack(
             side="left", padx=10
         )
-        tk.Button(bottom_frame, text="Exit", command=self.confirm_exit).pack(
-            side="right", padx=10
-        )
+        tk.Button(
+            bottom_frame, text="Exit", command=self.confirm_exit
+        ).pack(side="right", padx=10)
 
     def select_file(self) -> None:
         """Open a file dialog and display the selected file name."""
@@ -136,7 +146,9 @@ class VideoTrimApp(tk.Tk):
         output_dir = os.path.join(os.path.dirname(self.file_path), "converted")
         os.makedirs(output_dir, exist_ok=True)
 
-        base_name = os.path.splitext(os.path.basename(self.file_path))[0] + ".mkv"
+        base_name = (
+            os.path.splitext(os.path.basename(self.file_path))[0] + ".mkv"
+        )
         output_file = os.path.join(output_dir, base_name)
 
         command = [
@@ -158,11 +170,16 @@ class VideoTrimApp(tk.Tk):
             subprocess.run(command, check=True)
         except FileNotFoundError:
             messagebox.showerror(
-                "Error", "ffmpeg not found. Please install ffmpeg and ensure it is in your PATH."
+                "Error",
+                "ffmpeg not found. Please install ffmpeg "
+                "and ensure it is in your PATH.",
             )
             return
-        except subprocess.CalledProcessError as exc:  # pragma: no cover - subprocess failure
-            messagebox.showerror("Error", f"FFmpeg failed: {exc}")
+        except subprocess.CalledProcessError as exc:
+            # pragma: no cover - subprocess failure
+            messagebox.showerror(
+                "Error", f"FFmpeg failed: {exc}"
+            )
             return
 
         messagebox.showinfo("Success", f"Video saved to {output_file}")
@@ -178,9 +195,13 @@ class VideoTrimApp(tk.Tk):
             FileNotFoundError,
             subprocess.CalledProcessError,
         ) as exc:  # pragma: no cover - subprocess failure
-            messagebox.showerror("Error", f"FFmpeg failed: {exc}")
+            messagebox.showerror(
+                "Error", f"FFmpeg failed: {exc}"
+            )
             return
-        messagebox.showinfo("Success", f"Converted {len(converted)} file(s)")
+        messagebox.showinfo(
+            "Success", f"Converted {len(converted)} file(s)"
+        )
 
     def confirm_exit(self) -> None:
         """Prompt the user to confirm application exit."""
@@ -194,4 +215,3 @@ class VideoTrimApp(tk.Tk):
 if __name__ == "__main__":  # pragma: no cover - GUI entry point
     app = VideoTrimApp()
     app.mainloop()
-
