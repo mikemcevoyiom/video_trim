@@ -63,7 +63,7 @@ class VideoTrimApp(tk.Tk):
     def __init__(self) -> None:
         super().__init__()
         self.title("Video Trim")
-        self.geometry("500x300")
+        self.geometry("500x400")
 
         self.file_path: str | None = None
         self.directory_path: str | None = None
