@@ -9,9 +9,6 @@ import tkinter as tk
 from pathlib import Path
 from tkinter import filedialog, messagebox
 
-if __package__ in (None, ""):
-    sys.path.append(str(Path(__file__).resolve().parents[1]))
-
 from video_trim import __version__
 from video_trim.cli import _validate_time
 
