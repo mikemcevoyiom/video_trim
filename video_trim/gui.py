@@ -5,14 +5,14 @@ from tkinter import filedialog, messagebox
 from typing import List, Optional, Set, Tuple
 
 ENCODER_PREFERENCE = [
+    "h264_amf",
+    "hevc_amf",
     "h264_nvenc",
     "hevc_nvenc",
     "h264_qsv",
     "hevc_qsv",
     "h264_videotoolbox",
     "hevc_videotoolbox",
-    "h264_amf",
-    "hevc_amf",
 ]
 
 def detect_available_encoders() -> Set[str]:
