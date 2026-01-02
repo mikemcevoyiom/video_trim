@@ -1,0 +1,231 @@
+import subprocess
+import tkinter as tk
+from pathlib import Path
+from tkinter import filedialog, messagebox
+from typing import List, Optional, Set
+
+ENCODER_PREFERENCE = [
+    "h264_nvenc",
+    "hevc_nvenc",
+    "h264_qsv",
+    "hevc_qsv",
+    "h264_videotoolbox",
+    "hevc_videotoolbox",
+    "h264_amf",
+    "hevc_amf",
+]
+
+ENCODER_HWACCEL = {
+    "h264_nvenc": "cuda",
+    "hevc_nvenc": "cuda",
+    "h264_qsv": "qsv",
+    "hevc_qsv": "qsv",
+    "h264_videotoolbox": "videotoolbox",
+    "hevc_videotoolbox": "videotoolbox",
+    "h264_amf": "d3d11va",
+    "hevc_amf": "d3d11va",
+}
+
+
+def detect_available_encoders() -> Set[str]:
+    try:
+        result = subprocess.run(
+            ["ffmpeg", "-hide_banner", "-encoders"],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+    except FileNotFoundError:
+        return set()
+
+    encoders = set()
+    for line in result.stdout.splitlines():
+        parts = line.split()
+        if len(parts) >= 2 and parts[0].startswith("V"):
+            encoders.add(parts[1])
+    return encoders
+
+
+def detect_available_hwaccels() -> Set[str]:
+    try:
+        result = subprocess.run(
+            ["ffmpeg", "-hide_banner", "-hwaccels"],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+    except FileNotFoundError:
+        return set()
+
+    hwaccels = set()
+    for line in result.stdout.splitlines():
+        value = line.strip()
+        if value and not value.startswith("Hardware acceleration methods"):
+            hwaccels.add(value)
+    return hwaccels
+
+
+def select_encoder() -> str:
+    encoders = detect_available_encoders()
+    hwaccels = detect_available_hwaccels()
+    for candidate in ENCODER_PREFERENCE:
+        if candidate not in encoders:
+            continue
+        hwaccel = ENCODER_HWACCEL.get(candidate)
+        if hwaccel and hwaccel not in hwaccels:
+            continue
+        return candidate
+    return "libx264"
+
+
+def ensure_unique_output_path(output_dir: Path, base_name: str, suffix: str) -> Path:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    candidate = output_dir / f"{base_name}{suffix}"
+    counter = 1
+    while candidate.exists():
+        candidate = output_dir / f"{base_name}_{counter}{suffix}"
+        counter += 1
+    return candidate
+
+
+def build_ffmpeg_command(
+    input_path: Path,
+    output_path: Path,
+    start: str,
+    end: str,
+) -> List[str]:
+    encoder = select_encoder()
+    command = [
+        "ffmpeg",
+        "-hide_banner",
+    ]
+
+    hwaccel = ENCODER_HWACCEL.get(encoder)
+    if hwaccel:
+        command.extend(["-hwaccel", hwaccel])
+
+    command.extend(
+        [
+            "-ss",
+            start,
+            "-to",
+            end,
+            "-i",
+            str(input_path),
+            "-c:v",
+            encoder,
+            "-c:a",
+            "copy",
+            "-y",
+            str(output_path),
+        ]
+    )
+    return command
+
+
+class VideoTrimGUI(tk.Tk):
+    def __init__(self) -> None:
+        super().__init__()
+        self.title("Video Trim")
+        self.geometry("520x240")
+        self.resizable(False, False)
+        self.selected_file: Optional[Path] = None
+
+        self._build_widgets()
+
+    def _build_widgets(self) -> None:
+        file_frame = tk.Frame(self)
+        file_frame.pack(fill="x", padx=16, pady=10)
+
+        tk.Label(file_frame, text="Selected file:").pack(anchor="w")
+        self.file_label = tk.Label(file_frame, text="No file selected", anchor="w")
+        self.file_label.pack(fill="x", pady=(4, 6))
+
+        tk.Button(file_frame, text="Select Video", command=self.select_file).pack(anchor="w")
+
+        time_frame = tk.Frame(self)
+        time_frame.pack(fill="x", padx=16, pady=10)
+
+        tk.Label(time_frame, text="Start time (e.g. 00:00:05)").grid(row=0, column=0, sticky="w")
+        tk.Label(time_frame, text="End time (e.g. 00:00:20)").grid(row=0, column=1, sticky="w")
+
+        self.start_entry = tk.Entry(time_frame, width=20)
+        self.end_entry = tk.Entry(time_frame, width=20)
+        self.start_entry.grid(row=1, column=0, padx=(0, 10), pady=(4, 0), sticky="w")
+        self.end_entry.grid(row=1, column=1, pady=(4, 0), sticky="w")
+
+        action_frame = tk.Frame(self)
+        action_frame.pack(fill="x", padx=16, pady=(10, 0))
+
+        self.run_button = tk.Button(action_frame, text="Trim Video", command=self.trim_video)
+        self.run_button.pack(anchor="w")
+
+        self.status_label = tk.Label(self, text="", anchor="w", fg="#0a6e0a")
+        self.status_label.pack(fill="x", padx=16, pady=(10, 0))
+
+    def select_file(self) -> None:
+        file_path = filedialog.askopenfilename(
+            title="Select video file",
+            filetypes=[
+                ("Video files", "*.mp4 *.mkv *.mov *.avi *.webm *.m4v"),
+                ("All files", "*.*"),
+            ],
+        )
+        if file_path:
+            self.selected_file = Path(file_path)
+            self.file_label.config(text=str(self.selected_file))
+            self.status_label.config(text="")
+
+    def trim_video(self) -> None:
+        if not self.selected_file:
+            messagebox.showwarning("Missing file", "Please select a video file to trim.")
+            return
+
+        start_time = self.start_entry.get().strip()
+        end_time = self.end_entry.get().strip()
+
+        if not start_time or not end_time:
+            messagebox.showwarning("Missing time", "Please enter both start and end times.")
+            return
+
+        output_dir = self.selected_file.parent / "Edited"
+        output_path = ensure_unique_output_path(
+            output_dir,
+            f"{self.selected_file.stem}_trim",
+            self.selected_file.suffix,
+        )
+
+        command = build_ffmpeg_command(self.selected_file, output_path, start_time, end_time)
+        self.run_button.config(state="disabled")
+        self.status_label.config(text="Running ffmpeg...", fg="#5a5a5a")
+        self.update_idletasks()
+
+        try:
+            result = subprocess.run(command, check=False, capture_output=True, text=True)
+        except FileNotFoundError:
+            self.run_button.config(state="normal")
+            messagebox.showerror("FFmpeg not found", "FFmpeg was not found on this system.")
+            return
+
+        self.run_button.config(state="normal")
+
+        if result.returncode == 0:
+            self.status_label.config(
+                text=f"Saved trimmed video to {output_path}",
+                fg="#0a6e0a",
+            )
+        else:
+            messagebox.showerror(
+                "FFmpeg error",
+                f"FFmpeg failed with exit code {result.returncode}.\n\n{result.stderr}",
+            )
+            self.status_label.config(text="", fg="#0a6e0a")
+
+
+def main() -> None:
+    app = VideoTrimGUI()
+    app.mainloop()
+
+
+if __name__ == "__main__":
+    main()
