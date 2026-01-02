@@ -2,7 +2,7 @@ import subprocess
 import tkinter as tk
 from pathlib import Path
 from tkinter import filedialog, messagebox
-from typing import List, Optional, Set
+from typing import List, Optional, Set, Tuple
 
 ENCODER_PREFERENCE = [
     "h264_nvenc",
@@ -14,18 +14,6 @@ ENCODER_PREFERENCE = [
     "h264_amf",
     "hevc_amf",
 ]
-
-ENCODER_HWACCEL = {
-    "h264_nvenc": "cuda",
-    "hevc_nvenc": "cuda",
-    "h264_qsv": "qsv",
-    "hevc_qsv": "qsv",
-    "h264_videotoolbox": "videotoolbox",
-    "hevc_videotoolbox": "videotoolbox",
-    "h264_amf": "d3d11va",
-    "hevc_amf": "d3d11va",
-}
-
 
 def detect_available_encoders() -> Set[str]:
     try:
@@ -46,33 +34,10 @@ def detect_available_encoders() -> Set[str]:
     return encoders
 
 
-def detect_available_hwaccels() -> Set[str]:
-    try:
-        result = subprocess.run(
-            ["ffmpeg", "-hide_banner", "-hwaccels"],
-            check=False,
-            capture_output=True,
-            text=True,
-        )
-    except FileNotFoundError:
-        return set()
-
-    hwaccels = set()
-    for line in result.stdout.splitlines():
-        value = line.strip()
-        if value and not value.startswith("Hardware acceleration methods"):
-            hwaccels.add(value)
-    return hwaccels
-
-
 def select_encoder() -> str:
     encoders = detect_available_encoders()
-    hwaccels = detect_available_hwaccels()
     for candidate in ENCODER_PREFERENCE:
         if candidate not in encoders:
-            continue
-        hwaccel = ENCODER_HWACCEL.get(candidate)
-        if hwaccel and hwaccel not in hwaccels:
             continue
         return candidate
     return "libx264"
@@ -93,16 +58,12 @@ def build_ffmpeg_command(
     output_path: Path,
     start: str,
     end: str,
+    encoder: str,
 ) -> List[str]:
-    encoder = select_encoder()
     command = [
         "ffmpeg",
         "-hide_banner",
     ]
-
-    hwaccel = ENCODER_HWACCEL.get(encoder)
-    if hwaccel:
-        command.extend(["-hwaccel", hwaccel])
 
     command.extend(
         [
@@ -121,6 +82,25 @@ def build_ffmpeg_command(
         ]
     )
     return command
+
+
+def run_ffmpeg_with_fallback(
+    input_path: Path,
+    output_path: Path,
+    start: str,
+    end: str,
+) -> Tuple[subprocess.CompletedProcess, str, bool]:
+    encoder = select_encoder()
+    command = build_ffmpeg_command(input_path, output_path, start, end, encoder)
+    result = subprocess.run(command, check=False, capture_output=True, text=True)
+    if result.returncode == 0 or encoder == "libx264":
+        return result, encoder, False
+
+    fallback_command = build_ffmpeg_command(input_path, output_path, start, end, "libx264")
+    fallback_result = subprocess.run(
+        fallback_command, check=False, capture_output=True, text=True
+    )
+    return fallback_result, "libx264", True
 
 
 class VideoTrimGUI(tk.Tk):
@@ -195,13 +175,17 @@ class VideoTrimGUI(tk.Tk):
             self.selected_file.suffix,
         )
 
-        command = build_ffmpeg_command(self.selected_file, output_path, start_time, end_time)
         self.run_button.config(state="disabled")
         self.status_label.config(text="Running ffmpeg...", fg="#5a5a5a")
         self.update_idletasks()
 
         try:
-            result = subprocess.run(command, check=False, capture_output=True, text=True)
+            result, encoder, used_fallback = run_ffmpeg_with_fallback(
+                self.selected_file,
+                output_path,
+                start_time,
+                end_time,
+            )
         except FileNotFoundError:
             self.run_button.config(state="normal")
             messagebox.showerror("FFmpeg not found", "FFmpeg was not found on this system.")
@@ -210,14 +194,18 @@ class VideoTrimGUI(tk.Tk):
         self.run_button.config(state="normal")
 
         if result.returncode == 0:
+            fallback_note = " (fallback to software encoding)" if used_fallback else ""
             self.status_label.config(
-                text=f"Saved trimmed video to {output_path}",
+                text=f"Saved trimmed video to {output_path}{fallback_note}",
                 fg="#0a6e0a",
             )
         else:
             messagebox.showerror(
                 "FFmpeg error",
-                f"FFmpeg failed with exit code {result.returncode}.\n\n{result.stderr}",
+                (
+                    f"FFmpeg failed with exit code {result.returncode}.\n"
+                    f"Encoder: {encoder}\n\n{result.stderr}"
+                ),
             )
             self.status_label.config(text="", fg="#0a6e0a")
 
