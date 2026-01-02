@@ -53,6 +53,22 @@ def ensure_unique_output_path(output_dir: Path, base_name: str, suffix: str) -> 
     return candidate
 
 
+def parse_time_to_seconds(value: str) -> Optional[float]:
+    parts = value.split(":")
+    if not 1 <= len(parts) <= 3:
+        return None
+    try:
+        parts_f = [float(part) for part in parts]
+    except ValueError:
+        return None
+    while len(parts_f) < 3:
+        parts_f.insert(0, 0.0)
+    hours, minutes, seconds = parts_f
+    if minutes < 0 or minutes >= 60 or seconds < 0 or seconds >= 60:
+        return None
+    return hours * 3600 + minutes * 60 + seconds
+
+
 def build_ffmpeg_command(
     input_path: Path,
     output_path: Path,
@@ -66,14 +82,22 @@ def build_ffmpeg_command(
         "-hide_banner",
     ]
 
+    start_seconds = parse_time_to_seconds(start)
+    end_seconds = parse_time_to_seconds(end)
+    if start_seconds is None or end_seconds is None:
+        raise ValueError("Invalid start or end time format.")
+    duration = end_seconds - start_seconds
+    if duration <= 0:
+        raise ValueError("End time must be greater than start time.")
+
     command.extend(
         [
-            "-ss",
-            start,
-            "-to",
-            end,
             "-i",
             str(input_path),
+            "-ss",
+            start,
+            "-t",
+            f"{duration}",
             "-c:v",
             encoder,
         ]
@@ -226,6 +250,10 @@ class VideoTrimGUI(tk.Tk):
         except FileNotFoundError:
             self.run_button.config(state="normal")
             messagebox.showerror("FFmpeg not found", "FFmpeg was not found on this system.")
+            return
+        except ValueError as exc:
+            self.run_button.config(state="normal")
+            messagebox.showwarning("Invalid time", str(exc))
             return
 
         self.run_button.config(state="normal")
