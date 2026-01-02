@@ -6,6 +6,7 @@ import os
 import subprocess
 import sys
 import tkinter as tk
+from pathlib import Path
 from tkinter import filedialog, messagebox
 
 from video_trim import __version__
