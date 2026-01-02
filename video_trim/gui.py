@@ -6,8 +6,14 @@ import os
 import subprocess
 import sys
 import tkinter as tk
+from pathlib import Path
 from tkinter import filedialog, messagebox
+
+if __package__ in (None, ""):
+    sys.path.append(str(Path(__file__).resolve().parents[1]))
+
 from video_trim import __version__
+from video_trim.cli import _validate_time
 
 
 VIDEO_EXTENSIONS = {
@@ -143,13 +149,20 @@ class VideoTrimApp(tk.Tk):
             messagebox.showerror("Error", "Start and end times are required")
             return
 
-        output_dir = os.path.join(os.path.dirname(self.file_path), "converted")
+        output_dir = os.path.join(os.path.dirname(self.file_path), "edited")
         os.makedirs(output_dir, exist_ok=True)
 
         base_name = (
             os.path.splitext(os.path.basename(self.file_path))[0] + ".mkv"
         )
         output_file = os.path.join(output_dir, base_name)
+
+        try:
+            _validate_time(start, "start")
+            _validate_time(end, "end")
+        except ValueError as exc:
+            messagebox.showerror("Error", str(exc))
+            return
 
         command = [
             "ffmpeg",
