@@ -1,5 +1,6 @@
 import subprocess
 import tkinter as tk
+from tkinter import ttk
 from pathlib import Path
 from tkinter import filedialog, messagebox
 from typing import List, Optional, Set, Tuple
@@ -173,12 +174,22 @@ class VideoTrimGUI(tk.Tk):
         bitrate_frame = tk.Frame(self)
         bitrate_frame.pack(fill="x", padx=16, pady=(0, 10))
 
-        tk.Label(bitrate_frame, text="Target video bitrate (Mbps)").grid(
-            row=0, column=0, sticky="w"
+        tk.Label(bitrate_frame, text="Target quality").grid(row=0, column=0, sticky="w")
+        self.quality_options = {
+            "High (12 Mbps)": 12.0,
+            "Medium (8 Mbps)": 8.0,
+            "Low (4 Mbps)": 4.0,
+            "Original (no limit)": None,
+        }
+        self.quality_var = tk.StringVar(value="Medium (8 Mbps)")
+        self.quality_menu = ttk.Combobox(
+            bitrate_frame,
+            textvariable=self.quality_var,
+            values=list(self.quality_options.keys()),
+            state="readonly",
+            width=24,
         )
-        self.bitrate_entry = tk.Entry(bitrate_frame, width=20)
-        self.bitrate_entry.insert(0, "8")
-        self.bitrate_entry.grid(row=1, column=0, pady=(4, 0), sticky="w")
+        self.quality_menu.grid(row=1, column=0, pady=(4, 0), sticky="w")
 
         action_frame = tk.Frame(self)
         action_frame.pack(fill="x", padx=16, pady=(10, 0))
@@ -209,24 +220,11 @@ class VideoTrimGUI(tk.Tk):
 
         start_time = self.start_entry.get().strip()
         end_time = self.end_entry.get().strip()
-        bitrate_value = self.bitrate_entry.get().strip()
-
         if not start_time or not end_time:
             messagebox.showwarning("Missing time", "Please enter both start and end times.")
             return
 
-        bitrate_mbps: Optional[float] = None
-        if bitrate_value:
-            try:
-                bitrate_mbps = float(bitrate_value)
-                if bitrate_mbps <= 0:
-                    raise ValueError("Bitrate must be positive.")
-            except ValueError:
-                messagebox.showwarning(
-                    "Invalid bitrate",
-                    "Please enter a positive number for the bitrate (in Mbps), or leave it blank.",
-                )
-                return
+        bitrate_mbps = self.quality_options.get(self.quality_var.get())
 
         output_dir = self.selected_file.parent / "Edited"
         output_path = ensure_unique_output_path(
