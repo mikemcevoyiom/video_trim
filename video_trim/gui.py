@@ -15,6 +15,17 @@ ENCODER_PREFERENCE = [
     "hevc_amf",
 ]
 
+ENCODER_HWACCEL = {
+    "h264_nvenc": "cuda",
+    "hevc_nvenc": "cuda",
+    "h264_qsv": "qsv",
+    "hevc_qsv": "qsv",
+    "h264_videotoolbox": "videotoolbox",
+    "hevc_videotoolbox": "videotoolbox",
+    "h264_amf": "d3d11va",
+    "hevc_amf": "d3d11va",
+}
+
 
 def detect_available_encoders() -> Set[str]:
     try:
@@ -35,11 +46,35 @@ def detect_available_encoders() -> Set[str]:
     return encoders
 
 
+def detect_available_hwaccels() -> Set[str]:
+    try:
+        result = subprocess.run(
+            ["ffmpeg", "-hide_banner", "-hwaccels"],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+    except FileNotFoundError:
+        return set()
+
+    hwaccels = set()
+    for line in result.stdout.splitlines():
+        value = line.strip()
+        if value and not value.startswith("Hardware acceleration methods"):
+            hwaccels.add(value)
+    return hwaccels
+
+
 def select_encoder() -> str:
     encoders = detect_available_encoders()
+    hwaccels = detect_available_hwaccels()
     for candidate in ENCODER_PREFERENCE:
-        if candidate in encoders:
-            return candidate
+        if candidate not in encoders:
+            continue
+        hwaccel = ENCODER_HWACCEL.get(candidate)
+        if hwaccel and hwaccel not in hwaccels:
+            continue
+        return candidate
     return "libx264"
 
 
@@ -60,24 +95,32 @@ def build_ffmpeg_command(
     end: str,
 ) -> List[str]:
     encoder = select_encoder()
-    return [
+    command = [
         "ffmpeg",
         "-hide_banner",
-        "-hwaccel",
-        "auto",
-        "-ss",
-        start,
-        "-to",
-        end,
-        "-i",
-        str(input_path),
-        "-c:v",
-        encoder,
-        "-c:a",
-        "copy",
-        "-y",
-        str(output_path),
     ]
+
+    hwaccel = ENCODER_HWACCEL.get(encoder)
+    if hwaccel:
+        command.extend(["-hwaccel", hwaccel])
+
+    command.extend(
+        [
+            "-ss",
+            start,
+            "-to",
+            end,
+            "-i",
+            str(input_path),
+            "-c:v",
+            encoder,
+            "-c:a",
+            "copy",
+            "-y",
+            str(output_path),
+        ]
+    )
+    return command
 
 
 class VideoTrimGUI(tk.Tk):
