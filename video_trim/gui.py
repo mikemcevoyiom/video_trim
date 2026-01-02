@@ -59,6 +59,7 @@ def build_ffmpeg_command(
     start: str,
     end: str,
     encoder: str,
+    bitrate_mbps: Optional[float],
 ) -> List[str]:
     command = [
         "ffmpeg",
@@ -75,6 +76,12 @@ def build_ffmpeg_command(
             str(input_path),
             "-c:v",
             encoder,
+        ]
+    )
+    if bitrate_mbps is not None:
+        command.extend(["-b:v", f"{bitrate_mbps}M"])
+    command.extend(
+        [
             "-c:a",
             "copy",
             "-y",
@@ -89,14 +96,19 @@ def run_ffmpeg_with_fallback(
     output_path: Path,
     start: str,
     end: str,
+    bitrate_mbps: Optional[float],
 ) -> Tuple[subprocess.CompletedProcess, str, bool]:
     encoder = select_encoder()
-    command = build_ffmpeg_command(input_path, output_path, start, end, encoder)
+    command = build_ffmpeg_command(
+        input_path, output_path, start, end, encoder, bitrate_mbps
+    )
     result = subprocess.run(command, check=False, capture_output=True, text=True)
     if result.returncode == 0 or encoder == "libx264":
         return result, encoder, False
 
-    fallback_command = build_ffmpeg_command(input_path, output_path, start, end, "libx264")
+    fallback_command = build_ffmpeg_command(
+        input_path, output_path, start, end, "libx264", bitrate_mbps
+    )
     fallback_result = subprocess.run(
         fallback_command, check=False, capture_output=True, text=True
     )
@@ -134,6 +146,16 @@ class VideoTrimGUI(tk.Tk):
         self.start_entry.grid(row=1, column=0, padx=(0, 10), pady=(4, 0), sticky="w")
         self.end_entry.grid(row=1, column=1, pady=(4, 0), sticky="w")
 
+        bitrate_frame = tk.Frame(self)
+        bitrate_frame.pack(fill="x", padx=16, pady=(0, 10))
+
+        tk.Label(bitrate_frame, text="Target video bitrate (Mbps)").grid(
+            row=0, column=0, sticky="w"
+        )
+        self.bitrate_entry = tk.Entry(bitrate_frame, width=20)
+        self.bitrate_entry.insert(0, "8")
+        self.bitrate_entry.grid(row=1, column=0, pady=(4, 0), sticky="w")
+
         action_frame = tk.Frame(self)
         action_frame.pack(fill="x", padx=16, pady=(10, 0))
 
@@ -163,10 +185,24 @@ class VideoTrimGUI(tk.Tk):
 
         start_time = self.start_entry.get().strip()
         end_time = self.end_entry.get().strip()
+        bitrate_value = self.bitrate_entry.get().strip()
 
         if not start_time or not end_time:
             messagebox.showwarning("Missing time", "Please enter both start and end times.")
             return
+
+        bitrate_mbps: Optional[float] = None
+        if bitrate_value:
+            try:
+                bitrate_mbps = float(bitrate_value)
+                if bitrate_mbps <= 0:
+                    raise ValueError("Bitrate must be positive.")
+            except ValueError:
+                messagebox.showwarning(
+                    "Invalid bitrate",
+                    "Please enter a positive number for the bitrate (in Mbps), or leave it blank.",
+                )
+                return
 
         output_dir = self.selected_file.parent / "Edited"
         output_path = ensure_unique_output_path(
@@ -185,6 +221,7 @@ class VideoTrimGUI(tk.Tk):
                 output_path,
                 start_time,
                 end_time,
+                bitrate_mbps,
             )
         except FileNotFoundError:
             self.run_button.config(state="normal")
