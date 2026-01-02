@@ -15,3 +15,7 @@ dev = ["pytest"]
 
 [project.scripts]
 video-trim = "video_trim.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["video_trim*"]
