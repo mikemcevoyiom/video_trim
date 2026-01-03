@@ -70,6 +70,14 @@ def parse_time_to_seconds(value: str) -> Optional[float]:
     return hours * 3600 + minutes * 60 + seconds
 
 
+def format_duration(seconds: float) -> str:
+    total_seconds = int(round(seconds))
+    hours = total_seconds // 3600
+    minutes = (total_seconds % 3600) // 60
+    remaining_seconds = total_seconds % 60
+    return f"{hours:02d}:{minutes:02d}:{remaining_seconds:02d}"
+
+
 def build_ffmpeg_command(
     input_path: Path,
     output_path: Path,
@@ -296,6 +304,18 @@ class VideoTrimGUI(tk.Tk):
             messagebox.showwarning("Missing time", "Please enter both start and end times.")
             return
 
+        start_seconds = parse_time_to_seconds(start_time)
+        end_seconds = parse_time_to_seconds(end_time)
+        if start_seconds is None or end_seconds is None:
+            messagebox.showwarning(
+                "Invalid time", "Please use the HH:MM:SS format for start/end times."
+            )
+            return
+        if end_seconds <= start_seconds:
+            messagebox.showwarning("Invalid time", "End time must be greater than start time.")
+            return
+        trimmed_duration = format_duration(end_seconds - start_seconds)
+
         bitrate_mbps: Optional[float] = None
         if bitrate_value:
             try:
@@ -344,6 +364,10 @@ class VideoTrimGUI(tk.Tk):
             self.status_label.config(
                 text=f"Saved trimmed video to {output_path}{fallback_note}",
                 fg="#0a6e0a",
+            )
+            messagebox.showinfo(
+                "Trim complete",
+                f"File saved to:\n{output_path}\n\nTrimmed length: {trimmed_duration}",
             )
         else:
             messagebox.showerror(
