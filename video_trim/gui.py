@@ -239,8 +239,17 @@ class VideoTrimGUI(tk.Tk):
         self._build_widgets()
 
     def _build_widgets(self) -> None:
-        file_frame = tk.Frame(self, bg=self.bg_color)
-        file_frame.pack(fill="x", padx=16, pady=10)
+        content_frame = tk.Frame(self, bg=self.bg_color)
+        content_frame.pack(fill="both", expand=True, padx=16, pady=10)
+        content_frame.columnconfigure(0, weight=1)
+
+        left_frame = tk.Frame(content_frame, bg=self.bg_color)
+        left_frame.grid(row=0, column=0, sticky="nsew")
+        right_frame = tk.Frame(content_frame, bg=self.bg_color)
+        right_frame.grid(row=0, column=1, sticky="ne", padx=(24, 0))
+
+        file_frame = tk.Frame(left_frame, bg=self.bg_color)
+        file_frame.pack(fill="x")
 
         tk.Label(file_frame, text="Selected file:", bg=self.bg_color).pack(anchor="w")
         self.file_label = tk.Label(
@@ -259,8 +268,8 @@ class VideoTrimGUI(tk.Tk):
 
         tk.Button(file_frame, text="Select Video", command=self.select_file).pack(anchor="w")
 
-        time_frame = tk.Frame(self, bg=self.bg_color)
-        time_frame.pack(fill="x", padx=16, pady=10)
+        time_frame = tk.Frame(left_frame, bg=self.bg_color)
+        time_frame.pack(fill="x", pady=10)
 
         tk.Label(time_frame, text="Start time (e.g. 00:00:05)", bg=self.bg_color).grid(
             row=0, column=0, sticky="w"
@@ -285,8 +294,8 @@ class VideoTrimGUI(tk.Tk):
         self.start_entry.grid(row=1, column=0, padx=(0, 10), pady=(4, 0), sticky="w")
         self.end_entry.grid(row=1, column=1, pady=(4, 0), sticky="w")
 
-        bitrate_frame = tk.Frame(self, bg=self.bg_color)
-        bitrate_frame.pack(fill="x", padx=16, pady=(0, 10))
+        bitrate_frame = tk.Frame(left_frame, bg=self.bg_color)
+        bitrate_frame.pack(fill="x", pady=(0, 10))
 
         tk.Label(bitrate_frame, text="Target video bitrate (Mbps)", bg=self.bg_color).grid(
             row=0, column=0, sticky="w"
@@ -295,20 +304,15 @@ class VideoTrimGUI(tk.Tk):
         self.bitrate_entry.insert(0, "8")
         self.bitrate_entry.grid(row=1, column=0, pady=(4, 0), sticky="w")
 
-        action_frame = tk.Frame(self, bg=self.bg_color)
-        action_frame.pack(fill="x", padx=16, pady=(10, 0))
+        self.run_button = tk.Button(right_frame, text="Trim Video", command=self.trim_video)
+        self.run_button.pack(anchor="e", pady=(20, 12))
 
-        self.run_button = tk.Button(action_frame, text="Trim Video", command=self.trim_video)
-        self.run_button.pack(anchor="w")
+        tk.Button(right_frame, text="Exit", command=self.destroy).pack(anchor="e")
 
         self.status_label = tk.Label(
-            self, text="", anchor="w", fg="#0a6e0a", bg=self.bg_color
+            right_frame, text="", anchor="center", fg="#0a6e0a", bg=self.bg_color
         )
-        self.status_label.pack(fill="x", padx=16, pady=(10, 0))
-
-        exit_frame = tk.Frame(self, bg=self.bg_color)
-        exit_frame.pack(fill="x", padx=16, pady=(0, 10))
-        tk.Button(exit_frame, text="Exit", command=self.destroy).pack(side="right")
+        self.status_label.pack(fill="x", pady=(8, 0))
 
     def _is_valid_time_input(self, proposed: str) -> bool:
         if proposed == "":
