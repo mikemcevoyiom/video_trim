@@ -189,7 +189,7 @@ def format_bitrate(bit_rate: Optional[int]) -> str:
     return f"{bit_rate} bps"
 
 
-def fetch_video_info(input_path: Path) -> Tuple[str, str]:
+def fetch_video_info(input_path: Path) -> Tuple[str, str, Optional[float]]:
     command = [
         "ffprobe",
         "-v",
@@ -204,11 +204,11 @@ def fetch_video_info(input_path: Path) -> Tuple[str, str]:
     ]
     result = subprocess.run(command, check=False, capture_output=True, text=True)
     if result.returncode != 0:
-        return "Unknown", "Unknown"
+        return "Unknown", "Unknown", None
     try:
         payload = json.loads(result.stdout)
     except json.JSONDecodeError:
-        return "Unknown", "Unknown"
+        return "Unknown", "Unknown", None
 
     streams = payload.get("streams") or []
     stream = streams[0] if streams else {}
@@ -221,7 +221,10 @@ def fetch_video_info(input_path: Path) -> Tuple[str, str]:
         bit_rate_value = int(bit_rate_raw) if bit_rate_raw is not None else None
     except (TypeError, ValueError):
         bit_rate_value = None
-    return codec_name, format_bitrate(bit_rate_value)
+    bitrate_mbps = (
+        bit_rate_value / 1_000_000 if bit_rate_value and bit_rate_value > 0 else None
+    )
+    return codec_name, format_bitrate(bit_rate_value), bitrate_mbps
 
 
 class VideoTrimGUI(tk.Tk):
@@ -332,19 +335,25 @@ class VideoTrimGUI(tk.Tk):
         if file_path:
             self.selected_file = Path(file_path)
             self.file_label.config(text=str(self.selected_file))
-            codec_name, bit_rate = self._get_selected_video_info()
+            codec_name, bit_rate, bitrate_mbps = self._get_selected_video_info()
             self.selected_codec_name = codec_name
             self.codec_value_label.config(text=codec_name)
             self.bitrate_value_label.config(text=bit_rate)
+            self.bitrate_entry.delete(0, tk.END)
+            bitrate_floor: Optional[int] = None
+            if bitrate_mbps is not None and bitrate_mbps >= 1:
+                bitrate_floor = int(bitrate_mbps)
+            if bitrate_floor is not None:
+                self.bitrate_entry.insert(0, str(bitrate_floor))
             self.status_label.config(text="")
 
-    def _get_selected_video_info(self) -> Tuple[str, str]:
+    def _get_selected_video_info(self) -> Tuple[str, str, Optional[float]]:
         if not self.selected_file:
-            return "-", "-"
+            return "-", "-", None
         try:
             return fetch_video_info(self.selected_file)
         except FileNotFoundError:
-            return "Unknown (ffprobe missing)", "Unknown"
+            return "Unknown (ffprobe missing)", "Unknown", None
 
     def trim_video(self) -> None:
         if not self.selected_file:
