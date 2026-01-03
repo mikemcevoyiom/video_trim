@@ -190,59 +190,74 @@ class VideoTrimGUI(tk.Tk):
         super().__init__()
         self.title("Video Trim")
         self.geometry("520x280")
-        self.resizable(False, False)
+        self.minsize(520, 280)
+        self.resizable(True, True)
+        self.bg_color = "#dbeeff"
+        self.configure(bg=self.bg_color)
         self.selected_file: Optional[Path] = None
 
         self._build_widgets()
 
     def _build_widgets(self) -> None:
-        file_frame = tk.Frame(self)
+        file_frame = tk.Frame(self, bg=self.bg_color)
         file_frame.pack(fill="x", padx=16, pady=10)
 
-        tk.Label(file_frame, text="Selected file:").pack(anchor="w")
-        self.file_label = tk.Label(file_frame, text="No file selected", anchor="w")
+        tk.Label(file_frame, text="Selected file:", bg=self.bg_color).pack(anchor="w")
+        self.file_label = tk.Label(
+            file_frame, text="No file selected", anchor="w", bg=self.bg_color
+        )
         self.file_label.pack(fill="x", pady=(4, 6))
 
-        info_frame = tk.Frame(file_frame)
+        info_frame = tk.Frame(file_frame, bg=self.bg_color)
         info_frame.pack(fill="x", pady=(0, 6))
-        tk.Label(info_frame, text="Codec:").grid(row=0, column=0, sticky="w")
-        self.codec_value_label = tk.Label(info_frame, text="-")
+        tk.Label(info_frame, text="Codec:", bg=self.bg_color).grid(row=0, column=0, sticky="w")
+        self.codec_value_label = tk.Label(info_frame, text="-", bg=self.bg_color)
         self.codec_value_label.grid(row=0, column=1, sticky="w", padx=(6, 0))
-        tk.Label(info_frame, text="Bitrate:").grid(row=1, column=0, sticky="w")
-        self.bitrate_value_label = tk.Label(info_frame, text="-")
+        tk.Label(info_frame, text="Bitrate:", bg=self.bg_color).grid(row=1, column=0, sticky="w")
+        self.bitrate_value_label = tk.Label(info_frame, text="-", bg=self.bg_color)
         self.bitrate_value_label.grid(row=1, column=1, sticky="w", padx=(6, 0))
 
         tk.Button(file_frame, text="Select Video", command=self.select_file).pack(anchor="w")
 
-        time_frame = tk.Frame(self)
+        time_frame = tk.Frame(self, bg=self.bg_color)
         time_frame.pack(fill="x", padx=16, pady=10)
 
-        tk.Label(time_frame, text="Start time (e.g. 00:00:05)").grid(row=0, column=0, sticky="w")
-        tk.Label(time_frame, text="End time (e.g. 00:00:20)").grid(row=0, column=1, sticky="w")
+        tk.Label(time_frame, text="Start time (e.g. 00:00:05)", bg=self.bg_color).grid(
+            row=0, column=0, sticky="w"
+        )
+        tk.Label(time_frame, text="End time (e.g. 00:00:20)", bg=self.bg_color).grid(
+            row=0, column=1, sticky="w"
+        )
 
         self.start_entry = tk.Entry(time_frame, width=20)
         self.end_entry = tk.Entry(time_frame, width=20)
         self.start_entry.grid(row=1, column=0, padx=(0, 10), pady=(4, 0), sticky="w")
         self.end_entry.grid(row=1, column=1, pady=(4, 0), sticky="w")
 
-        bitrate_frame = tk.Frame(self)
+        bitrate_frame = tk.Frame(self, bg=self.bg_color)
         bitrate_frame.pack(fill="x", padx=16, pady=(0, 10))
 
-        tk.Label(bitrate_frame, text="Target video bitrate (Mbps)").grid(
+        tk.Label(bitrate_frame, text="Target video bitrate (Mbps)", bg=self.bg_color).grid(
             row=0, column=0, sticky="w"
         )
         self.bitrate_entry = tk.Entry(bitrate_frame, width=20)
         self.bitrate_entry.insert(0, "8")
         self.bitrate_entry.grid(row=1, column=0, pady=(4, 0), sticky="w")
 
-        action_frame = tk.Frame(self)
+        action_frame = tk.Frame(self, bg=self.bg_color)
         action_frame.pack(fill="x", padx=16, pady=(10, 0))
 
         self.run_button = tk.Button(action_frame, text="Trim Video", command=self.trim_video)
         self.run_button.pack(anchor="w")
 
-        self.status_label = tk.Label(self, text="", anchor="w", fg="#0a6e0a")
+        self.status_label = tk.Label(
+            self, text="", anchor="w", fg="#0a6e0a", bg=self.bg_color
+        )
         self.status_label.pack(fill="x", padx=16, pady=(10, 0))
+
+        exit_frame = tk.Frame(self, bg=self.bg_color)
+        exit_frame.pack(fill="x", padx=16, pady=(0, 10))
+        tk.Button(exit_frame, text="Exit", command=self.destroy).pack(side="right")
 
     def select_file(self) -> None:
         file_path = filedialog.askopenfilename(
