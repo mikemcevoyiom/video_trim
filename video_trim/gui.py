@@ -5,16 +5,29 @@ from pathlib import Path
 from tkinter import filedialog, messagebox
 from typing import List, Optional, Set, Tuple
 
-ENCODER_PREFERENCE = [
-    "h264_amf",
-    "hevc_amf",
-    "h264_nvenc",
-    "hevc_nvenc",
-    "h264_qsv",
-    "hevc_qsv",
-    "h264_videotoolbox",
-    "hevc_videotoolbox",
-]
+ENCODER_PREFERENCE = {
+    "h264": [
+        "h264_amf",
+        "h264_nvenc",
+        "h264_qsv",
+        "h264_videotoolbox",
+    ],
+    "hevc": [
+        "hevc_amf",
+        "hevc_nvenc",
+        "hevc_qsv",
+        "hevc_videotoolbox",
+    ],
+}
+SOFTWARE_ENCODER = {
+    "h264": "libx264",
+    "hevc": "libx265",
+}
+
+CODEC_DISPLAY_NAME = {
+    "h264": "H.264",
+    "hevc": "HEVC (H.265)",
+}
 
 def detect_available_encoders() -> Set[str]:
     try:
@@ -35,13 +48,12 @@ def detect_available_encoders() -> Set[str]:
     return encoders
 
 
-def select_encoder() -> str:
+def select_encoder(target_codec: str) -> str:
     encoders = detect_available_encoders()
-    for candidate in ENCODER_PREFERENCE:
-        if candidate not in encoders:
-            continue
-        return candidate
-    return "libx264"
+    for candidate in ENCODER_PREFERENCE.get(target_codec, []):
+        if candidate in encoders:
+            return candidate
+    return SOFTWARE_ENCODER.get(target_codec, "libx264")
 
 
 def ensure_unique_output_path(output_dir: Path, base_name: str, suffix: str) -> Path:
@@ -130,22 +142,40 @@ def run_ffmpeg_with_fallback(
     start: str,
     end: str,
     bitrate_mbps: Optional[float],
+    target_codec: str,
 ) -> Tuple[subprocess.CompletedProcess, str, bool]:
-    encoder = select_encoder()
+    encoder = select_encoder(target_codec)
     command = build_ffmpeg_command(
         input_path, output_path, start, end, encoder, bitrate_mbps
     )
     result = subprocess.run(command, check=False, capture_output=True, text=True)
-    if result.returncode == 0 or encoder == "libx264":
+    software_encoder = SOFTWARE_ENCODER.get(target_codec, "libx264")
+    if result.returncode == 0 or encoder == software_encoder:
         return result, encoder, False
 
     fallback_command = build_ffmpeg_command(
-        input_path, output_path, start, end, "libx264", bitrate_mbps
+        input_path, output_path, start, end, software_encoder, bitrate_mbps
     )
     fallback_result = subprocess.run(
         fallback_command, check=False, capture_output=True, text=True
     )
-    return fallback_result, "libx264", True
+    return fallback_result, software_encoder, True
+
+
+def format_codec_label(codec_name: str) -> str:
+    normalized = codec_name.lower().strip()
+    if normalized in CODEC_DISPLAY_NAME:
+        return CODEC_DISPLAY_NAME[normalized]
+    return codec_name
+
+
+def determine_target_codec(input_codec: str) -> str:
+    normalized = input_codec.lower()
+    if "h264" in normalized:
+        return "hevc"
+    if "hevc" in normalized or "h265" in normalized:
+        return "hevc"
+    return "h264"
 
 
 def format_bitrate(bit_rate: Optional[int]) -> str:
@@ -203,6 +233,7 @@ class VideoTrimGUI(tk.Tk):
         self.bg_color = "#dbeeff"
         self.configure(bg=self.bg_color)
         self.selected_file: Optional[Path] = None
+        self.selected_codec_name: str = "Unknown"
 
         self._build_widgets()
 
@@ -279,6 +310,7 @@ class VideoTrimGUI(tk.Tk):
             self.selected_file = Path(file_path)
             self.file_label.config(text=str(self.selected_file))
             codec_name, bit_rate = self._get_selected_video_info()
+            self.selected_codec_name = codec_name
             self.codec_value_label.config(text=codec_name)
             self.bitrate_value_label.config(text=bit_rate)
             self.status_label.config(text="")
@@ -335,6 +367,7 @@ class VideoTrimGUI(tk.Tk):
             f"{self.selected_file.stem}_trim",
             self.selected_file.suffix,
         )
+        target_codec = determine_target_codec(self.selected_codec_name)
 
         self.run_button.config(state="disabled")
         self.status_label.config(text="Running ffmpeg...", fg="#5a5a5a")
@@ -347,6 +380,7 @@ class VideoTrimGUI(tk.Tk):
                 start_time,
                 end_time,
                 bitrate_mbps,
+                target_codec,
             )
         except FileNotFoundError:
             self.run_button.config(state="normal")
@@ -365,9 +399,15 @@ class VideoTrimGUI(tk.Tk):
                 text=f"Saved trimmed video to {output_path}{fallback_note}",
                 fg="#0a6e0a",
             )
+            codec_from = format_codec_label(self.selected_codec_name)
+            codec_to = format_codec_label(target_codec)
             messagebox.showinfo(
                 "Trim complete",
-                f"File saved to:\n{output_path}\n\nTrimmed length: {trimmed_duration}",
+                (
+                    f"File saved to:\n{output_path}\n\n"
+                    f"Trimmed length: {trimmed_duration}\n"
+                    f"Codec: {codec_from} → {codec_to}"
+                ),
             )
         else:
             messagebox.showerror(
