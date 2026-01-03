@@ -19,3 +19,6 @@ video-trim = "video_trim.cli:main"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["video_trim*"]
+
+[tool.setuptools.package-data]
+video_trim = ["assets/*.png"]

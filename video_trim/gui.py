@@ -2,6 +2,7 @@ import json
 import re
 import subprocess
 import tkinter as tk
+from importlib import resources
 from pathlib import Path
 from tkinter import filedialog, messagebox
 from typing import List, Optional, Set, Tuple
@@ -189,7 +190,7 @@ def format_bitrate(bit_rate: Optional[int]) -> str:
     return f"{bit_rate} bps"
 
 
-def fetch_video_info(input_path: Path) -> Tuple[str, str]:
+def fetch_video_info(input_path: Path) -> Tuple[str, str, Optional[float]]:
     command = [
         "ffprobe",
         "-v",
@@ -204,11 +205,11 @@ def fetch_video_info(input_path: Path) -> Tuple[str, str]:
     ]
     result = subprocess.run(command, check=False, capture_output=True, text=True)
     if result.returncode != 0:
-        return "Unknown", "Unknown"
+        return "Unknown", "Unknown", None
     try:
         payload = json.loads(result.stdout)
     except json.JSONDecodeError:
-        return "Unknown", "Unknown"
+        return "Unknown", "Unknown", None
 
     streams = payload.get("streams") or []
     stream = streams[0] if streams else {}
@@ -221,15 +222,18 @@ def fetch_video_info(input_path: Path) -> Tuple[str, str]:
         bit_rate_value = int(bit_rate_raw) if bit_rate_raw is not None else None
     except (TypeError, ValueError):
         bit_rate_value = None
-    return codec_name, format_bitrate(bit_rate_value)
+    bitrate_mbps = (
+        bit_rate_value / 1_000_000 if bit_rate_value and bit_rate_value > 0 else None
+    )
+    return codec_name, format_bitrate(bit_rate_value), bitrate_mbps
 
 
 class VideoTrimGUI(tk.Tk):
     def __init__(self) -> None:
         super().__init__()
         self.title("Video Trim")
-        self.geometry("520x280")
-        self.minsize(520, 280)
+        self.geometry("650x280")
+        self.minsize(650, 280)
         self.resizable(True, True)
         self.bg_color = "#dbeeff"
         self.configure(bg=self.bg_color)
@@ -239,8 +243,24 @@ class VideoTrimGUI(tk.Tk):
         self._build_widgets()
 
     def _build_widgets(self) -> None:
-        file_frame = tk.Frame(self, bg=self.bg_color)
-        file_frame.pack(fill="x", padx=16, pady=10)
+        self.background_image = self._load_background_image()
+        if self.background_image:
+            self.background_label = tk.Label(
+                self, image=self.background_image, bg=self.bg_color
+            )
+            self.background_label.place(relx=0.5, rely=0.5, anchor="center")
+
+        content_frame = tk.Frame(self, bg=self.bg_color)
+        content_frame.pack(fill="both", expand=True, padx=16, pady=10)
+        content_frame.columnconfigure(0, weight=1)
+
+        left_frame = tk.Frame(content_frame, bg=self.bg_color)
+        left_frame.grid(row=0, column=0, sticky="nsew")
+        right_frame = tk.Frame(content_frame, bg=self.bg_color)
+        right_frame.grid(row=0, column=1, sticky="ne", padx=(24, 0))
+
+        file_frame = tk.Frame(left_frame, bg=self.bg_color)
+        file_frame.pack(fill="x")
 
         tk.Label(file_frame, text="Selected file:", bg=self.bg_color).pack(anchor="w")
         self.file_label = tk.Label(
@@ -259,8 +279,8 @@ class VideoTrimGUI(tk.Tk):
 
         tk.Button(file_frame, text="Select Video", command=self.select_file).pack(anchor="w")
 
-        time_frame = tk.Frame(self, bg=self.bg_color)
-        time_frame.pack(fill="x", padx=16, pady=10)
+        time_frame = tk.Frame(left_frame, bg=self.bg_color)
+        time_frame.pack(fill="x", pady=10)
 
         tk.Label(time_frame, text="Start time (e.g. 00:00:05)", bg=self.bg_color).grid(
             row=0, column=0, sticky="w"
@@ -285,8 +305,8 @@ class VideoTrimGUI(tk.Tk):
         self.start_entry.grid(row=1, column=0, padx=(0, 10), pady=(4, 0), sticky="w")
         self.end_entry.grid(row=1, column=1, pady=(4, 0), sticky="w")
 
-        bitrate_frame = tk.Frame(self, bg=self.bg_color)
-        bitrate_frame.pack(fill="x", padx=16, pady=(0, 10))
+        bitrate_frame = tk.Frame(left_frame, bg=self.bg_color)
+        bitrate_frame.pack(fill="x", pady=(0, 10))
 
         tk.Label(bitrate_frame, text="Target video bitrate (Mbps)", bg=self.bg_color).grid(
             row=0, column=0, sticky="w"
@@ -295,20 +315,26 @@ class VideoTrimGUI(tk.Tk):
         self.bitrate_entry.insert(0, "8")
         self.bitrate_entry.grid(row=1, column=0, pady=(4, 0), sticky="w")
 
-        action_frame = tk.Frame(self, bg=self.bg_color)
-        action_frame.pack(fill="x", padx=16, pady=(10, 0))
+        self.run_button = tk.Button(right_frame, text="Trim Video", command=self.trim_video)
+        self.run_button.pack(anchor="e", pady=(20, 12))
 
-        self.run_button = tk.Button(action_frame, text="Trim Video", command=self.trim_video)
-        self.run_button.pack(anchor="w")
+        tk.Button(right_frame, text="Exit", command=self.destroy).pack(anchor="e")
 
         self.status_label = tk.Label(
-            self, text="", anchor="w", fg="#0a6e0a", bg=self.bg_color
+            right_frame, text="", anchor="center", fg="#0a6e0a", bg=self.bg_color
         )
-        self.status_label.pack(fill="x", padx=16, pady=(10, 0))
+        self.status_label.pack(fill="x", pady=(8, 0))
+        content_frame.lift()
 
-        exit_frame = tk.Frame(self, bg=self.bg_color)
-        exit_frame.pack(fill="x", padx=16, pady=(0, 10))
-        tk.Button(exit_frame, text="Exit", command=self.destroy).pack(side="right")
+    def _load_background_image(self) -> Optional[tk.PhotoImage]:
+        try:
+            background_resource = resources.files("video_trim.assets").joinpath(
+                "background.png"
+            )
+            with resources.as_file(background_resource) as background_path:
+                return tk.PhotoImage(file=str(background_path))
+        except (FileNotFoundError, ModuleNotFoundError, tk.TclError):
+            return None
 
     def _is_valid_time_input(self, proposed: str) -> bool:
         if proposed == "":
@@ -328,19 +354,25 @@ class VideoTrimGUI(tk.Tk):
         if file_path:
             self.selected_file = Path(file_path)
             self.file_label.config(text=str(self.selected_file))
-            codec_name, bit_rate = self._get_selected_video_info()
+            codec_name, bit_rate, bitrate_mbps = self._get_selected_video_info()
             self.selected_codec_name = codec_name
             self.codec_value_label.config(text=codec_name)
             self.bitrate_value_label.config(text=bit_rate)
+            self.bitrate_entry.delete(0, tk.END)
+            bitrate_floor: Optional[int] = None
+            if bitrate_mbps is not None and bitrate_mbps >= 1:
+                bitrate_floor = int(bitrate_mbps)
+            if bitrate_floor is not None:
+                self.bitrate_entry.insert(0, str(bitrate_floor))
             self.status_label.config(text="")
 
-    def _get_selected_video_info(self) -> Tuple[str, str]:
+    def _get_selected_video_info(self) -> Tuple[str, str, Optional[float]]:
         if not self.selected_file:
-            return "-", "-"
+            return "-", "-", None
         try:
             return fetch_video_info(self.selected_file)
         except FileNotFoundError:
-            return "Unknown (ffprobe missing)", "Unknown"
+            return "Unknown (ffprobe missing)", "Unknown", None
 
     def trim_video(self) -> None:
         if not self.selected_file:
