@@ -1,4 +1,5 @@
 import json
+import re
 import subprocess
 import tkinter as tk
 from pathlib import Path
@@ -268,8 +269,19 @@ class VideoTrimGUI(tk.Tk):
             row=0, column=1, sticky="w"
         )
 
-        self.start_entry = tk.Entry(time_frame, width=20)
-        self.end_entry = tk.Entry(time_frame, width=20)
+        time_validation = (self.register(self._is_valid_time_input), "%P")
+        self.start_entry = tk.Entry(
+            time_frame,
+            width=20,
+            validate="key",
+            validatecommand=time_validation,
+        )
+        self.end_entry = tk.Entry(
+            time_frame,
+            width=20,
+            validate="key",
+            validatecommand=time_validation,
+        )
         self.start_entry.grid(row=1, column=0, padx=(0, 10), pady=(4, 0), sticky="w")
         self.end_entry.grid(row=1, column=1, pady=(4, 0), sticky="w")
 
@@ -297,6 +309,13 @@ class VideoTrimGUI(tk.Tk):
         exit_frame = tk.Frame(self, bg=self.bg_color)
         exit_frame.pack(fill="x", padx=16, pady=(0, 10))
         tk.Button(exit_frame, text="Exit", command=self.destroy).pack(side="right")
+
+    def _is_valid_time_input(self, proposed: str) -> bool:
+        if proposed == "":
+            return True
+        if len(proposed) > 8:
+            return False
+        return re.fullmatch(r"\d{0,2}(:\d{0,2}(:\d{0,2})?)?", proposed) is not None
 
     def select_file(self) -> None:
         file_path = filedialog.askopenfilename(
