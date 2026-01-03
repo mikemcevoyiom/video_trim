@@ -228,8 +228,8 @@ class VideoTrimGUI(tk.Tk):
     def __init__(self) -> None:
         super().__init__()
         self.title("Video Trim")
-        self.geometry("520x280")
-        self.minsize(520, 280)
+        self.geometry("650x280")
+        self.minsize(650, 280)
         self.resizable(True, True)
         self.bg_color = "#dbeeff"
         self.configure(bg=self.bg_color)
