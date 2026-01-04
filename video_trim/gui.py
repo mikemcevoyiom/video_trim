@@ -321,12 +321,7 @@ class VideoTrimGUI(tk.Tk):
         self.status_label.pack(fill="x", pady=(8, 0))
 
     def _load_background_image(self) -> None:
-        try:
-            background_path = resources.files("video_trim.assets").joinpath(
-                "background.png"
-            )
-        except ModuleNotFoundError:
-            background_path = Path(__file__).resolve().parent / "assets" / "background.png"
+        background_path = resources.files("video_trim.assets").joinpath("background.png")
         if not background_path.is_file():
             return
         self._bg_image = tk.PhotoImage(file=str(background_path))
