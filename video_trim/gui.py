@@ -2,7 +2,7 @@ import json
 import re
 import subprocess
 import tkinter as tk
-from importlib import resources
+from importlib import resources, util
 from pathlib import Path
 from tkinter import filedialog, messagebox
 from typing import List, Optional, Set, Tuple
