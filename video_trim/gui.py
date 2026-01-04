@@ -4,7 +4,7 @@ import subprocess
 import tkinter as tk
 from importlib import resources, util
 from pathlib import Path
-from tkinter import filedialog, messagebox
+from tkinter import filedialog, messagebox, ttk
 from typing import List, Optional, Set, Tuple
 
 ENCODER_PREFERENCE = {
@@ -240,6 +240,7 @@ class VideoTrimGUI(tk.Tk):
         self.selected_codec_name: str = "Unknown"
         self._bg_image: Optional[tk.PhotoImage] = None
         self._background_path = self._resolve_background_path()
+        self._use_transparent_bg = self._background_path is not None
 
         if not self._background_path:
             self.configure(bg=self.bg_color)
@@ -248,48 +249,46 @@ class VideoTrimGUI(tk.Tk):
 
     def _build_widgets(self) -> None:
         self._load_background_image()
-        content_frame = tk.Frame(self, **self._bg_kwargs())
+        content_frame = self._frame(self)
         content_frame.pack(fill="both", expand=True, padx=16, pady=10)
         content_frame.columnconfigure(0, weight=1)
 
-        left_frame = tk.Frame(content_frame, **self._bg_kwargs())
+        left_frame = self._frame(content_frame)
         left_frame.grid(row=0, column=0, sticky="nsew")
-        right_frame = tk.Frame(content_frame, **self._bg_kwargs())
+        right_frame = self._frame(content_frame)
         right_frame.grid(row=0, column=1, sticky="ne", padx=(24, 0))
 
-        file_frame = tk.Frame(left_frame, **self._bg_kwargs())
+        file_frame = self._frame(left_frame)
         file_frame.pack(fill="x")
 
-        tk.Label(file_frame, text="Selected file:", **self._bg_kwargs()).pack(anchor="w")
-        self.file_label = tk.Label(
-            file_frame, text="No file selected", anchor="w", **self._bg_kwargs()
+        self._label(file_frame, text="Selected file:").pack(anchor="w")
+        self.file_label = self._label(
+            file_frame, text="No file selected", anchor="w"
         )
         self.file_label.pack(fill="x", pady=(4, 6))
 
-        info_frame = tk.Frame(file_frame, **self._bg_kwargs())
+        info_frame = self._frame(file_frame)
         info_frame.pack(fill="x", pady=(0, 6))
-        tk.Label(info_frame, text="Codec:", **self._bg_kwargs()).grid(
+        self._label(info_frame, text="Codec:").grid(
             row=0, column=0, sticky="w"
         )
-        self.codec_value_label = tk.Label(info_frame, text="-", **self._bg_kwargs())
+        self.codec_value_label = self._label(info_frame, text="-")
         self.codec_value_label.grid(row=0, column=1, sticky="w", padx=(6, 0))
-        tk.Label(info_frame, text="Bitrate:", **self._bg_kwargs()).grid(
+        self._label(info_frame, text="Bitrate:").grid(
             row=1, column=0, sticky="w"
         )
-        self.bitrate_value_label = tk.Label(info_frame, text="-", **self._bg_kwargs())
+        self.bitrate_value_label = self._label(info_frame, text="-")
         self.bitrate_value_label.grid(row=1, column=1, sticky="w", padx=(6, 0))
 
         tk.Button(file_frame, text="Select Video", command=self.select_file).pack(anchor="w")
 
-        time_frame = tk.Frame(left_frame, **self._bg_kwargs())
+        time_frame = self._frame(left_frame)
         time_frame.pack(fill="x", pady=10)
 
-        tk.Label(
-            time_frame, text="Start time (e.g. 00:00:05)", **self._bg_kwargs()
-        ).grid(
+        self._label(time_frame, text="Start time (e.g. 00:00:05)").grid(
             row=0, column=0, sticky="w"
         )
-        tk.Label(time_frame, text="End time (e.g. 00:00:20)", **self._bg_kwargs()).grid(
+        self._label(time_frame, text="End time (e.g. 00:00:20)").grid(
             row=0, column=1, sticky="w"
         )
 
@@ -309,14 +308,12 @@ class VideoTrimGUI(tk.Tk):
         self.start_entry.grid(row=1, column=0, padx=(0, 10), pady=(4, 0), sticky="w")
         self.end_entry.grid(row=1, column=1, pady=(4, 0), sticky="w")
 
-        bitrate_frame = tk.Frame(left_frame, **self._bg_kwargs())
+        bitrate_frame = self._frame(left_frame)
         bitrate_frame.pack(fill="x", pady=(0, 10))
 
-        tk.Label(
-            bitrate_frame,
-            text="Target video bitrate (Mbps)",
-            **self._bg_kwargs(),
-        ).grid(row=0, column=0, sticky="w")
+        self._label(bitrate_frame, text="Target video bitrate (Mbps)").grid(
+            row=0, column=0, sticky="w"
+        )
         self.bitrate_entry = tk.Entry(bitrate_frame, width=20)
         self.bitrate_entry.insert(0, "8")
         self.bitrate_entry.grid(row=1, column=0, pady=(4, 0), sticky="w")
@@ -326,15 +323,31 @@ class VideoTrimGUI(tk.Tk):
 
         tk.Button(right_frame, text="Exit", command=self.destroy).pack(anchor="e")
 
-        self.status_label = tk.Label(
-            right_frame, text="", anchor="center", fg="#0a6e0a", **self._bg_kwargs()
+        self.status_label = self._label(
+            right_frame,
+            text="",
+            anchor="center",
+            fg="#0a6e0a",
         )
         self.status_label.pack(fill="x", pady=(8, 0))
 
-    def _bg_kwargs(self) -> dict:
-        if self._background_path:
-            return {}
-        return {"bg": self.bg_color}
+    def _frame(self, parent: tk.Misc) -> tk.Widget:
+        if self._use_transparent_bg:
+            return ttk.Frame(parent)
+        return tk.Frame(parent, bg=self.bg_color)
+
+    def _label(self, parent: tk.Misc, text: str, **kwargs: object) -> tk.Widget:
+        if self._use_transparent_bg:
+            if "fg" in kwargs:
+                kwargs["foreground"] = kwargs.pop("fg")
+            return ttk.Label(parent, text=text, **kwargs)
+        return tk.Label(parent, text=text, bg=self.bg_color, **kwargs)
+
+    def _set_status(self, text: str, color: str) -> None:
+        if self._use_transparent_bg:
+            self.status_label.config(text=text, foreground=color)
+        else:
+            self.status_label.config(text=text, fg=color)
 
     def _resolve_background_path(self) -> Optional[Path]:
         try:
@@ -437,7 +450,7 @@ class VideoTrimGUI(tk.Tk):
         target_codec = determine_target_codec(self.selected_codec_name)
 
         self.run_button.config(state="disabled")
-        self.status_label.config(text="Running ffmpeg...", fg="#5a5a5a")
+        self._set_status("Running ffmpeg...", "#5a5a5a")
         self.update_idletasks()
 
         try:
@@ -462,9 +475,9 @@ class VideoTrimGUI(tk.Tk):
 
         if result.returncode == 0:
             fallback_note = " (fallback to software encoding)" if used_fallback else ""
-            self.status_label.config(
-                text=f"Saved trimmed video to {output_path}{fallback_note}",
-                fg="#0a6e0a",
+            self._set_status(
+                f"Saved trimmed video to {output_path}{fallback_note}",
+                "#0a6e0a",
             )
             codec_from = format_codec_label(self.selected_codec_name)
             codec_to = format_codec_label(target_codec)
@@ -484,7 +497,7 @@ class VideoTrimGUI(tk.Tk):
                     f"Encoder: {encoder}\n\n{result.stderr}"
                 ),
             )
-            self.status_label.config(text="", fg="#0a6e0a")
+            self._set_status("", "#0a6e0a")
 
 
 def main() -> None:
