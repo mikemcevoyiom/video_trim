@@ -239,10 +239,12 @@ class VideoTrimGUI(tk.Tk):
         self.configure(bg=self.bg_color)
         self.selected_file: Optional[Path] = None
         self.selected_codec_name: str = "Unknown"
+        self._bg_image: Optional[tk.PhotoImage] = None
 
         self._build_widgets()
 
     def _build_widgets(self) -> None:
+        self._load_background_image()
         content_frame = tk.Frame(self, bg=self.bg_color)
         content_frame.pack(fill="both", expand=True, padx=16, pady=10)
         content_frame.columnconfigure(0, weight=1)
@@ -317,6 +319,19 @@ class VideoTrimGUI(tk.Tk):
             right_frame, text="", anchor="center", fg="#0a6e0a", bg=self.bg_color
         )
         self.status_label.pack(fill="x", pady=(8, 0))
+
+    def _load_background_image(self) -> None:
+        try:
+            background_path = resources.files("video_trim.assets").joinpath(
+                "background.png"
+            )
+        except ModuleNotFoundError:
+            background_path = Path(__file__).resolve().parent / "assets" / "background.png"
+        if not background_path.is_file():
+            return
+        self._bg_image = tk.PhotoImage(file=str(background_path))
+        background_label = tk.Label(self, image=self._bg_image, borderwidth=0)
+        background_label.place(x=0, y=0, relwidth=1, relheight=1)
 
     def _is_valid_time_input(self, proposed: str) -> bool:
         if proposed == "":
